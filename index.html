@@ -915,7 +915,13 @@ function flyTo(v, dur=1.25){
   invalidate();
 }
 function jumpTo(v){ camTween = null; camera.position.copy(v.pos); controls.target.copy(v.target); controls.update(); invalidate(3); }
-controls.addEventListener('start', ()=>{ camTween = null; });
+// Un déplacement de caméra en cours s'efface devant le lecteur qui prend la main (glisser, molette),
+// mais pas devant un simple clic : dans ce cas il reprend dès que le bouton est relâché.
+let heldTween = null, ptr = null;
+canvas.addEventListener('pointerdown', e=>{ ptr = {x:e.clientX, y:e.clientY, moved:false}; }, true);
+canvas.addEventListener('pointermove', e=>{ if(ptr && Math.hypot(e.clientX-ptr.x, e.clientY-ptr.y) > 5) ptr.moved = true; }, true);
+addEventListener('pointerup', ()=>{ if(ptr && !ptr.moved && heldTween && !camTween){ camTween = heldTween; invalidate(); } heldTween = null; ptr = null; }, true);
+controls.addEventListener('start', ()=>{ heldTween = ptr && !ptr.moved ? camTween : null; camTween = null; });
 
 // ---------- visée ----------
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
